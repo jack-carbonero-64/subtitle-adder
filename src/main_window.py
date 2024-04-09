@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QLineEdit, QFileDialog
+from PyQt6.QtWidgets import QMainWindow, QLineEdit, QFileDialog, QMessageBox
 from PyQt6.uic import loadUi
 from config import config
 import os
@@ -49,6 +49,18 @@ class MainWindow(QMainWindow):
 
         subtitlesPath = "\\:".join(subtitlesPath.split(":"))
 
+        # Check the inputs
+        textualInputs = {
+            "Video input path": videoInputPath,
+            "Subtitles path": subtitlesPath
+        }
+
+        invalidInputDescriptions = self.checkInputValues(textualInputs)
+
+        if len(invalidInputDescriptions) > 0:
+            self.showInvalidInputsMessage(invalidInputDescriptions)
+            return
+
         # Ask user the video output path
         videoOutputPath = QFileDialog.getSaveFileName()[0]
 
@@ -56,3 +68,39 @@ class MainWindow(QMainWindow):
         if videoOutputPath != "":
             command = f"ffmpeg -y -i \"{videoInputPath}\" -vf \"subtitles='{subtitlesPath}':si=0\" \"{videoOutputPath}\""
             subprocess.run(command)
+
+    def checkInputValues(self, textualInputs):
+        """
+        Check inputs to ensure they are valid
+
+        Args:
+            textualInputs (dict[str, str]): A dictionary containing textual inputs where keys represent descriptions
+                                            of the inputs and values represent the corresponding input values
+
+        Returns:
+            list[str]: A list of descriptions indicating why the input is invalid. Each description specifies which
+                       input is invalid using the keys from textualInputs
+        """
+
+        invalidInputDescriptions = []
+
+        for (description, value) in textualInputs.items():
+            if value == "":
+                invalidInputDescriptions.append(description + " shouldn't be empty")
+
+        return invalidInputDescriptions
+
+    def showInvalidInputsMessage(self, invalidInputDescriptions):
+        """
+        Show a message box indicating which inputs are invalid and why
+
+        Args:
+            invalidInputDescriptions (list[str]): A list of descriptions indicating why the specified input is invalid
+        """
+
+        messageText = "Following inputs are invalid:\n"
+
+        for desc in invalidInputDescriptions:
+            messageText += f"    - {desc}\n"
+
+        QMessageBox.critical(self, "Error - Invalid inputs", messageText)
