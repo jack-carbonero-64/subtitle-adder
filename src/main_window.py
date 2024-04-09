@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QMainWindow, QLineEdit, QFileDialog
 from PyQt6.uic import loadUi
 from config import config
 import os
+import subprocess
 
 
 class MainWindow(QMainWindow):
@@ -36,3 +37,22 @@ class MainWindow(QMainWindow):
 
         elif "subtitlesBrowse" in senderName:
             self.subtitlesLineEdit.setText(filePath)
+
+    def onApplyPushButtonClicked(self):
+        """
+        Add the subtitles to the video
+        """
+
+        # Retrieve input values
+        videoInputPath = self.videoLineEdit.text().strip()
+        subtitlesPath = self.subtitlesLineEdit.text().strip()
+
+        subtitlesPath = "\\:".join(subtitlesPath.split(":"))
+
+        # Ask user the video output path
+        videoOutputPath = QFileDialog.getSaveFileName()[0]
+
+        # Execute the command to add the subtitles
+        if videoOutputPath != "":
+            command = f"ffmpeg -y -i \"{videoInputPath}\" -vf \"subtitles='{subtitlesPath}':si=0\" \"{videoOutputPath}\""
+            subprocess.run(command)
