@@ -61,13 +61,20 @@ class MainWindow(QMainWindow):
             self.showInvalidInputsMessage(invalidInputDescriptions)
             return
 
-        # Ask user the video output path
-        videoOutputPath = QFileDialog.getSaveFileName()[0]
+        # Check the output video path
+        defaultOutputVideoPath = self.getDefaultOutputVideoPath(videoInputPath)
+        videoOutputPath = QFileDialog.getSaveFileName(directory=defaultOutputVideoPath)[0]
+
+        if videoOutputPath == "":
+            return
+
+        if os.path.isfile(videoOutputPath) and os.path.samefile(videoInputPath, videoOutputPath):
+            QMessageBox.critical(self, "Error - Output file", "You can't overwrite the input file")
+            return
 
         # Execute the command to add the subtitles
-        if videoOutputPath != "":
-            command = f"ffmpeg -y -i \"{videoInputPath}\" -vf \"subtitles='{subtitlesPath}':si=0\" \"{videoOutputPath}\""
-            subprocess.run(command)
+        command = f"ffmpeg -y -i \"{videoInputPath}\" -vf \"subtitles='{subtitlesPath}':si=0\" \"{videoOutputPath}\""
+        subprocess.run(command)
 
     def checkInputValues(self, textualInputs):
         """
@@ -104,3 +111,22 @@ class MainWindow(QMainWindow):
             messageText += f"    - {desc}\n"
 
         QMessageBox.critical(self, "Error - Invalid inputs", messageText)
+
+    def getDefaultOutputVideoPath(self, videoInputPath):
+        """
+        Construct the default path for when the user selects the output video path
+
+        Args:
+            videoInputPath (str): Path of the input video
+
+        Returns:
+            str: Default path that will be given to the user for the output video
+        """
+
+        splittedPath = os.path.split(videoInputPath)
+
+        videoName = splittedPath[1].split(".")
+        videoName[0] += "_subbed"
+        videoName = ".".join(videoName)
+
+        return os.path.join(splittedPath[0], videoName)
